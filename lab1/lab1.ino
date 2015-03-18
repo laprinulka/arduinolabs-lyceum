@@ -4,6 +4,7 @@
 *     Автор: Лаприна Юлия Владимировна
 *     Дата создания: 04.03.2015
 */
+
 #define PIN_A 2
 #define PIN_B 3
 #define PIN_C 4
@@ -12,6 +13,9 @@
 #define PIN_F 7
 #define PIN_G 8
 #define PIN_P 9
+
+#define BUTTON_UP 11
+#define BUTTON_DOWN 10
 
 int number=0;
 
@@ -36,14 +40,22 @@ void setup() {
   pinMode(PIN_F,OUTPUT);
   pinMode(PIN_G,OUTPUT);
   pinMode(PIN_P,OUTPUT);
+  pinMode(BUTTON_DOWN,INPUT_PULLUP);
+  pinMode(BUTTON_UP,INPUT_PULLUP);
 }
 
 void loop(){
-  showDigit(number);
-  delay(1000);
-  number++;
+
+  if(digitalRead(BUTTON_UP)) number+=1;
+  if(digitalRead(BUTTON_DOWN)) number-=1;
   if(number == 10) number = 0;
+  if(number == -1) number = 9;
+
+  showDigit(number);
+  delay(250);
+//  number++;
 }
+
   void showDigit(int i) {
   digitalWrite(PIN_A , digit[i]&(1<<0));
   digitalWrite(PIN_B , digit[i]&(1<<1));
