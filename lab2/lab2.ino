@@ -41,21 +41,25 @@
 // initialize the library with the numbers of the interface pins
 LiquidCrystal lcd(4, 5, 10, 11, 12, 13);
 
-int ruchka;
+byte symbol=0;
 void setup() {
   // set up the LCD's number of columns and rows: 
   lcd.begin(16, 2);
   // Print a message to the LCD.
-  lcd.print("RUCHKA");
+  lcd.print("");
 }
 
 void loop() {
+  lcd.clear();
+  lcd.home()
+  lcd.print("RUCHKA");
+  ruchka=analogRead(A0);
   // set the cursor to column 0, line 1
   // (note: line 1 is the second row, since counting begins with 0):
-  ruchka=analogRead(A0)
   lcd.setCursor(0, 1);
   // print the number of seconds since reset:
-  lcd.print(ruchka);
+  for (int i=0; i<=ruchka; i++)
+  lcd. print("\xFF")
   delay(100);
 }
 
