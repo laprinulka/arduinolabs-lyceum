@@ -1,65 +1,114 @@
-/*
-  LiquidCrystal Library - Hello World
- 
- Demonstrates the use a 16x2 LCD display.  The LiquidCrystal
- library works with all LCD displays that are compatible with the 
- Hitachi HD44780 driver. There are many of them out there, and you
- can usually tell them by the 16-pin interface.
- 
- This sketch prints "Hello World!" to the LCD
- and shows the time.
- 
-  The circuit:
- * LCD RS pin to digital pin 12
- * LCD Enable pin to digital pin 11
- * LCD D4 pin to digital pin 5
- * LCD D5 pin to digital pin 4
- * LCD D6 pin to digital pin 3
- * LCD D7 pin to digital pin 2
- * LCD R/W pin to ground
- * 10K resistor:
- * ends to +5V and ground
- * wiper to LCD VO pin (pin 3)
- 
- Library originally added 18 Apr 2008
- by David A. Mellis
- library modified 5 Jul 2009
- by Limor Fried (http://www.ladyada.net)
- example added 9 Jul 2009
- by Tom Igoe
- modified 22 Nov 2010
- by Tom Igoe
- 
- This example code is in the public domain.
-
- http://www.arduino.cc/en/Tutorial/LiquidCrystal
- */
-
-// include the library code:
+#include <OneWire.h>
 #include <LiquidCrystal.h>
 
-// initialize the library with the numbers of the interface pins
 LiquidCrystal lcd(4, 5, 10, 11, 12, 13);
+OneWire  ds(9);
 
 byte symbol=0;
 void setup() {
-  // set up the LCD's number of columns and rows: 
   lcd.begin(16, 2);
-  // Print a message to the LCD.
   lcd.print("");
 }
 
+uint16_t ruchka;
+
 void loop() {
+  //------- One Wire section ------//
+  byte i;
+  byte present = 0;
+  byte type_s = 0;
+  byte data[12];
+  byte addr[8];
+  float celsius; //fahrenheit;
+  
+  if ( !ds.search(addr)) {
+//    Serial.println("No more addresses.");
+//    Serial.println();
+    ds.reset_search();
+    delay(250);
+    return;
+  }
+  
+//  Serial.print("ROM =");
+//  for( i = 0; i < 8; i++) {
+//    Serial.write(' ');
+//    Serial.print(addr[i], HEX);
+//  }
+
+  if (OneWire::crc8(addr, 7) != addr[7]) {
+      Serial.println("CRC is not valid!");
+      return;
+  }
+  Serial.println();
+ 
+  // the first ROM byte indicates which chip
+/*  switch (addr[0]) {
+    case 0x10:
+      Serial.println("  Chip = DS18S20");  // or old DS1820
+      type_s = 1;
+      break;
+    case 0x28:
+      Serial.println("  Chip = DS18B20");
+      type_s = 0;
+      break;
+    case 0x22:
+      Serial.println("  Chip = DS1822");
+      type_s = 0;
+      break;
+    default:
+      Serial.println("Device is not a DS18x20 family device.");
+      return;
+  } 
+*/
+  ds.reset();
+  ds.select(addr);
+  ds.write(0x44, 1);  // CMD start conversion
+  delay(1000);     // delay for conversion complete
+  present = ds.reset();
+  ds.select(addr);    
+  ds.write(0xBE);         // CMD Read Scratchpad
+
+//  Serial.print("  Data = ");
+//  Serial.print(present, HEX);
+//  Serial.print(" ");
+  for ( i = 0; i < 9; i++) {           // we need 9 bytes
+    data[i] = ds.read();
+//    Serial.print(data[i], HEX);
+//    Serial.print(" ");
+  }
+//  Serial.print(" CRC=");
+//  Serial.print(OneWire::crc8(data, 8), HEX);
+//  Serial.println();
+
+  int16_t raw = (data[1] << 8) | data[0];
+  if (type_s) {
+    raw = raw << 3; // 9 bit resolution default
+    if (data[7] == 0x10) {
+      // "count remain" gives full 12 bit resolution
+      raw = (raw & 0xFFF0) + 12 - data[6];
+    }
+  } else {
+    byte cfg = (data[4] & 0x60);
+    // at lower res, the low bits are undefined, so let's zero them
+    if (cfg == 0x00) raw = raw & ~7;  // 9 bit resolution, 93.75 ms
+    else if (cfg == 0x20) raw = raw & ~3; // 10 bit res, 187.5 ms
+    else if (cfg == 0x40) raw = raw & ~1; // 11 bit res, 375 ms
+    //// default is 12 bit resolution, 750 ms conversion time
+  }
+  celsius = (float)raw / 16.0;
+
+  //------ END Onewire section ------//
+
+
+
   lcd.clear();
-  lcd.home()
-  lcd.print("RUCHKA");
+  lcd.home();
+  lcd.print("T1 = ");
+  lcd.print(celsius);
   ruchka=analogRead(A0);
-  // set the cursor to column 0, line 1
-  // (note: line 1 is the second row, since counting begins with 0):
   lcd.setCursor(0, 1);
-  // print the number of seconds since reset:
   for (int i=0; i<=ruchka; i++)
-  lcd. print("\xFF")
+    lcd.print("\xFF");
   delay(100);
 }
 
